@@ -30,8 +30,7 @@ class ApiService {
 
   Future<List<FileAnalysisResultDTO>> getFileAnalysisResults(int fileId) async {
     try {
-      Response response = await _dio.get('/api/files/23/analysis_results');
-      print(response.data);
+      Response response = await _dio.get('/api/files/$fileId/analysis_results');
       return (response.data['analysis_results'] as List)
           .map((e) => FileAnalysisResultDTO.fromJson(e))
           .toList();
@@ -55,6 +54,20 @@ class ApiService {
       });
 
       await _dio.post('/api/projects/upload_project', data: formData);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> analyzeProject({
+    required int projectId,
+  }) async {
+    try {
+      Map<String, dynamic> requestBody = {
+        'project_id': projectId,
+      };
+
+      await _dio.post('/api/projects/analyze', data: requestBody);
     } catch (e) {
       rethrow;
     }

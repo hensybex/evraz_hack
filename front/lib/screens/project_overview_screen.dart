@@ -5,6 +5,7 @@ import '../providers/project_overview_provider.dart';
 import '../models/project_dto.dart';
 import '../models/project_file_dto.dart';
 import '../models/project_analysis_result_dto.dart';
+import '../service/api_service.dart';
 import '../widgets/project_file_card.dart';
 
 class ProjectOverviewScreen extends StatefulWidget {
@@ -186,6 +187,30 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
               tabs: _tabs.map((tab) => Tab(text: tab)).toList(),
             ),
             actions: [
+              IconButton(
+                icon: const Icon(
+                  Icons.rocket_launch_sharp,
+                  color: Colors.white,
+                ),
+                onPressed: () async {
+                  try {
+                    // Call analyze project (assuming project_id = 1 for example)
+                    final ApiService apiService = ApiService();
+
+                    await apiService.analyzeProject(projectId: 1);
+
+                    // Show Snackbar on success
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Project analyzed successfully!')),
+                    );
+                  } catch (e) {
+                    // Handle error
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: ${e.toString()}')),
+                    );
+                  }
+                },
+              ),
               IconButton(
                 icon: const Icon(
                   Icons.download,
