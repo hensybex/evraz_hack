@@ -1,0 +1,55 @@
+Reply in English
+
+I'm an experienced developer. I'm a true expert in building APIs with Go and interfaces with Flutter. I'm also an expert with OpenAI API and Mistral API, RAG, building multi-agent systems, and integrating LLMs into any apps.
+
+I'm preparing to participate in a programming competition. The goal is to develop a back-end and integrate it into a provided telegram-bot project or, for example, web app (so there are no strict requirements regarding front-end). Back-end should allow uploading zip-archives with programming projects or single programming files, and performing code review of the files via LLMs, based on code review requirements.
+
+I've already done such kind of projects, and I have lots of code already prepared. First of all, I want you to review file with evaluation criteria and solution I'm going to create. Check, whether my solution aligns well with the requirements, and whether I don't overperform (e.g. don't do anything, which won't boost my final score directly)
+
+Evaluation criteria:
+
+### Business Criteria:
+
+Derived from the performance of the participants and the opinion of the technical experts.
+
+1. Relevance of the business part of the solution - **from 0 to 10 points (free criterion).
+#### Technical Criteria:
+Exposed by technical experts. 
+***If criterion 1 “Solution Launchability” has a score of 0 points - all technical criteria are also scored 0 points***.
+2. Runnability of the solution has a score between 0 and 2 points;
+3. Completeness of the solution - 0 to 12 points;
+4. Evaluation by project pool within the same line of business - 0 to 4 points; 
+5. Coverage of more areas - 0 to 6 points.
+**Total evaluation scale - 0 to 24 points.
+### Criteria on performance and design:
+To be exhibited to the jury directly at the decision pitch.
+**Will be presented as one global “Performance Evaluation” criterion, with a “Yes/No” criteria questionnaire embedded in it.** ### ###
+6. Adherence to a uniform design style
+7. Adherence to the principles of structure (meaning the report itself).
+8. The topic of the decision is fully disclosed
+9. The chosen approach to the solution can be called innovative or creative
+10. Answers to the questions are concise, reasoned and correct.
+**The final evaluation scale is from 0 to 5 points.
+
+Solution image
+The corporate database contains a lot of information on different programming directions and languages, whether to cover all provided or to focus on one is your, and only your choice.
+You need to define methods for obtaining the necessary information from the provided project files (individual with code or fully prepared projects, using OCR Pipeline, RAG or ColPali model), and create a system that allows you to evaluate these files using LLM and return a report indicating errors made when writing code.
+
+Solution download format
+The solution must be submitted to the platform no later than **9:00 a.m. on December 1** in the following form:
+1. A link to the source code in VCS (version control system - GitHub, GitLab, Mercury or others)
+2. Link to a cloud disk (Yandex, Google) where uploaded:
+  1. archive with the source code of the project
+  2. Video-demo of the project (a video showing the process of your solution, with or without comments, not longer than 2 minutes)
+3. A link to your project presentation (cloud disk with `.pptx`/`.pdf` file or an extended presentation on Notion, Figma or other services). [Presentation Project](https://docs.google.com/presentation/d/1vu5ngtoi1d0lrXGyZW9-6vhMOraeRJ5MAtSH2_R1spI/edit?usp=sharing).
+4. A link to your deployed solution for testing by the jury.
+
+My solution:
+
+A go API + flutter web app + postgres DB, deployed via docker-compose + Dockerfiles + Makefile. My solution will be deployed on my own VM. API will allow uploading a project or file. After uploading of file, it  is immediately analysed, and review is generated onto front-end (both some simple text and  pdf file review.pdf, available for uploading). After uploading of a project, it is written into the DB, and then analysis is performed via few iterations:
+
+1) Analysis of the project tree (via tree shell command), whether it aligns with the proposed project tree based on the guidelines
+
+2) Analysis of each file inside the project, performed iteratively. For each of the criterias in the guidelines, separate prompt is used to evaluate specific criteria. After full analysis is performed, all criterias are combined into final review.
+
+I also want to allow user to select on the front-end any review previously performed, to double-check the results

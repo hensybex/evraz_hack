@@ -1,0 +1,24 @@
+# docker/api/Dockerfile.dev
+
+# Use the Go base image
+FROM golang:1.23-alpine
+
+WORKDIR /app
+
+# Install Air for hot reload
+RUN go install github.com/air-verse/air@latest
+
+# Copy go.mod and go.sum from the api directory
+COPY api/go.mod api/go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the entire api directory
+COPY api .
+
+# Expose port
+EXPOSE 8080
+
+# Command to run Air
+CMD ["air", "-c", ".air.toml"]

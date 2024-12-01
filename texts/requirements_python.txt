@@ -1,0 +1,400 @@
+Design Requirements for Python Projects
+demo_project
+├── components
+│   ├── demo_project_backend
+│   │   ├── demo_project
+│   │   ├── tests
+│   │   │   └── __init__.py
+│   │   ├── pyproject.toml
+│   │   ├── README.md
+│   │   └── setup.py
+├── deployment
+├── docs
+├── .editorconfig
+├── .gitattributes
+└── .gitignore
+    • A monorepository is used (see the demo project).
+    • .gitignore is in the root.
+    • .editorconfig is also in the root.
+    • .gitattributes is also in the root.
+    • In deployment, there are files for CI/CD (discuss the structure with our DevOps).
+    • In docs, we store technical documentation (we build schemas with PlantUML):
+        ◦ Precedent schema
+        ◦ Database schema
+        ◦ Deployment schema
+        ◦ Component schema
+    • Swagger docs are generated on the backend when the corresponding endpoint is called (see the demo project).
+    • Keep documentation of business processes either here or in a separate wiki.
+
+Components Directory
+    • Inside the project, there is a directory called components. This is needed to separate the front and back (the front structure should be discussed with our frontend team).
+    • In components, there is a directory called demo_project_backend, which serves as the root directory for the backend.
+        ◦ This directory is also the root for the Python modules of the project. For example:
+            ▪ In an IDE, you can mark it as sources_root.
+            ▪ When running from the console, you need to define PYTHONPATH and link to this directory.
+        ◦ The directory is designed as a standard Python package.
+
+Key Files in the Backend Directory
+    • setup.py
+        ◦ Describes package metadata and dependencies.
+        ◦ setup.cfg may also be used.
+    • pyproject.toml
+        ◦ Describes various configs for builders, autoformatters, etc.
+    • README.md
+        ◦ Includes a brief description of the project, instructions on how to deploy on a local machine/container, how to run tests, permissions/group scheme, etc.
+    • Directory with source code:
+        ◦ Acts as the root of imports inside the project.
+        ◦ It is desirable to use a concise name.
+
+Application Core
+At the center of the architecture lies the Application Core, which consists of:
+    1. Domain:
+        ◦ Represents the business logic of the application.
+        ◦ It is framework-agnostic and contains rules and behaviors specific to the business.
+    2. Application Layer:
+        ◦ Handles application-specific logic, such as use cases and workflows.
+        ◦ Provides services for interacting with the domain layer.
+    3. Ports:
+        ◦ Define interfaces (e.g., handlers, published interfaces) that connect the core to the outside world.
+        ◦ Ensure loose coupling by acting as a contract between the core and the adapters.
+
+Adapters
+Adapters are divided into two categories:
+Primary Adapters
+These are responsible for input into the application:
+    • REST Adapter:
+        ◦ Handles REST API requests from external systems or applications.
+    • WebSocket Adapter:
+        ◦ Manages real-time communication via WebSocket connections.
+    • Both adapters allow clients (e.g., frontend applications) to interact with the application core.
+Secondary Adapters
+These are responsible for output from the application:
+    • MQ Adapter:
+        ◦ Publishes or subscribes to messages on a message queue for asynchronous processing.
+    • Database Adapter:
+        ◦ Provides interaction with the database, allowing persistence of data.
+    • SMS Service Adapter:
+        ◦ Sends SMS messages via an external SMS service.
+    • Email Service Adapter:
+        ◦ Handles email communication with external services.
+
+Flow of Interaction
+    1. Input: Primary adapters receive requests (e.g., REST API calls or WebSocket events) and pass them to the application core via defined ports.
+    2. Processing: The core processes the request using the domain and application layers.
+    3. Output: Secondary adapters facilitate interaction with external systems such as databases, messaging systems, or email services.
+
+Key Principles
+    • The core is independent of any external technology or frameworks.
+    • Adapters act as a bridge, ensuring that the core is isolated and reusable across various contexts.
+    • The architecture supports scalability and maintainability by separating concerns and adhering to dependency inversion.
+
+The “Hexagonal” architecture is used. We have primary and secondary adapters in one catalog.
+demo_project_backend
+├── demo_project
+│   ├── adapters
+│   ├── application
+│   └── composites
+│       └── __init__.py
+├── tests
+│   └── __init__.py
+├── pyproject.toml
+├── README.md
+└── setup.py
+We use Python 3.7.
+Our stack:
+    • evraz-classic-app-layer
+    • evraz-classic-aspects
+    • evraz-classic-components
+    • evraz-classic-http-api
+    • evraz-classic-http-auth
+    • evraz-classic-messaging
+    • evraz-classic-messaging-kombu
+    • evraz-classic-sql-storage
+Take the latest versions.
+What packages we use for development:
+    • falcon~=3.0.0
+    • gunicorn~=20.0.0
+    • gevent~=21.1.0
+    • attrs~=21.2.0
+    • sqlalchemy~=1.4.0
+    • alembic~=1.7.0
+    • kafka-python~=2.0.0
+    • click~=7.1.0 (CLI)
+    • numpy~=1.21.0
+    • pandas~=1.3.0
+    • openpyxl~=3.0.0
+    • pydantic~=1.8.0
+    • pymssql~=2.2.2.0
+    • cx-oracle~=8.2.0
+    • kombu~=5.1.0
+    • psycopg2~=2.9.0
+    • PyJWT~=2.0.0
+    • python-json-logger~=2.0.0
+    • requests~=2.27.0
+    • plotly~=5.5.0
+    • pytest~=6.2.0
+    • pytest-cov~=2.12.0
+    • isort~=5.10.0
+    • yapf~=0.32.0
+    • toml~=0.10.2
+    • docxtpl~=0.16.4 (Use a docx as a Jinja2 template)
+Other packages should be discussed with our backend development lead.
+
+Application Layer (Business Logic)
+application
+├── etl
+│   ├── __init__.py
+│   ├── constants.py
+│   ├── dataclasses.py
+│   ├── interfaces.py
+│   └── services.py
+├── mills_planner
+│   ├── services
+│   │   ├── __init__.py
+│   │   ├── constants.py
+│   │   ├── dataclasses.py
+│   │   ├── events.py
+│   │   └── interfaces.py
+└── model
+    ├── __init__.py
+    └── errors.py
+
+Application Layer (Business Logic)
+The application layer contains everything related to business logic (entities, DTOs, constants, DS models, services, etc.).
+This layer is independent of integrations (adapters). For this purpose, a DI mechanism is used.
+The application layer describes interfaces for receiving data, and adapters implement them.
+If the subject area is complex, then subject area entities are created (which are mapped to tables in the adapter layer).
+The entities describe their behavior and invariants.
+If the subject area is simple (e.g., simple graphs), it is enough to describe data transfer objects (DTOs) and return them from repositories/gateways/API clients in primary adapters.
+Simple data structures (dictionaries, scalar lists, dictionaries) should not be transferred between layers. DTOs are ordinary dataclasses with simple behavior.
+Secondary adapters are implemented in services, and they work with entities. Data validation occurs when calling a public method of the service from the adapters. For this, DTOs are described at the service level in the form of Pydantic models.
+It is possible to call one service from another. However, it is better to avoid excessive links.
+DS code (feature engineering and model calling) should be kept in a separate package. All possible errors are described in this layer.
+
+Adapters Layer
+Adapters handle integrations with external services. Web libraries (MVC components), CLI tools, producers, consumers, and other integration components (e.g., API clients) are located here.
+adapters
+├── api
+├── app_database
+├── cli
+├── kafka_consumer
+├── logger
+├── message_bus
+├── source_database
+├── source_excel_parser
+└── __init__.py
+Database work (table descriptions, migrations, query code) is also handled in secondary adapters. Since the company uses various DBMS (mainly MSSQL and Postgres), as few dialect-dependent constructs as possible should be used. If used, they should be marked as # TODO: dialect dependent.
+    • Tables are described as regular SQLAlchemy tables, and specifying naming_convention in Metadata is mandatory.
+    • If MSSQL is planned, use the “app” schema and modify env.py of Alembic (refer to the demo project).
+.
+├── adapters
+├── api
+├── app_database
+│   ├── alembic
+│   │   ├── __init__.py
+│   │   ├── env.py
+│   │   ├── script.py.mako
+│   ├── migrations
+│   └── repositories
+│       ├── __init__.py
+│       ├── mapping.py
+│       ├── settings.py
+│       ├── tables.py
+
+Naming conventions:
+    • Table names: lowercase, snake_case.
+    • Entity tables and directories: plural names.
+    • Log tables: singular names.
+For complex domain logic, table mappers are created for business logic classes via SQLAlchemy imperative mapping (avoiding the N+1 problem).
+Query code is written in repositories. Business logic should not be hardcoded into queries or the adapter layer.
+For complex projects, ORM objects are returned from repositories. For simpler cases, DTOs are used.
+The code for creating web applications, customization, and registering controllers resides in adapters.
+adapters
+├── api
+│   ├── __init__.py
+│   ├── app.py
+│   ├── controllers.py
+│   ├── join_points.py
+│   └── settings.py
+    • Services from the application layer are injected into controllers.
+    • Controllers call methods from services, prepare structures for serialization, and handle asynchronous task concatenation.
+Serialization rules:
+    • Decimal → string
+    • datetime → isoformat (refer to "Working with date (timezone)")
+    • time → isoformat
+    • UUID → string
+    • Enum → name or value, depending on requirements.
+composites
+├── __init__.py
+├── alembic_runner.py
+├── api.py
+├── cli.py
+├── etl.py
+├── model.py
+└── realtime_data.py
+Composite Layer
+The composite layer assembles components to run processes. It initializes settings and injects dependencies.
+Steps to build an HTTP API:
+    1. Instantiate SQLAlchemy engine.
+    2. Create a connection.
+    3. Inject the connection into repositories.
+    4. Instantiate other components with implemented dependencies.
+    5. Instantiate services.
+    6. Pass services to the HTTP app factory (adapter layer).
+    7. The factory registers controllers with implemented services.
+To run it, point Gunicorn to the app (Falcon) object in the composite module.
+
+Project Settings
+All settings are passed as environment variables.
+Each part of the application has its own settings.py (e.g., DBMS adapters and HTTP API adapters). A BaseSettings class from Pydantic is used for settings. 
+.
+├── adapters
+├── api
+├── app_database
+│   ├── alembic
+│   ├── repositories
+│   │   ├── __init__.py
+│   │   ├── mapping.py
+│   │   ├── settings.py // Crucial
+│   │   ├── tables.py
+├── cli
+├── kafka_consumer
+├── logger
+│   ├── __init__.py
+│   ├── logger.py
+│   ├── settings.py // Crucial
+├── message_bus
+│   ├── __init__.py
+│   ├── settings.py // Crucial
+│   ├── schema.py
+
+Composite modules instantiate each customization class and embed them in the appropriate components.
+How what interacts
+A primary adapter (such as a controller or a consumer) invokes a service from the application layer, passes parameters to the service, and the service validates the parameters. In order to execute business logic, data from integrations may require data from integrations, in which case the service will invoke the logic through an interface adapter and get the data. Notification, publication of messages are also in the adapters and the call will also be through interfaces.
+The main thing to understand is that the entry point to the business logic layer is the service. The business logic layer does not depends on integrations, i.e. the application layer should not import something from adapters, composites.
+Error Handling
+Clients should not know technical details of errors.
+    • All application errors are described in the business logic layer.
+    • Validation is performed in services.
+    • DBMS errors are not used directly (they are too generic). Services can raise their own defined errors.
+The adapter layer catches errors from the business logic layer and transforms them into the required format. For example, all business logic errors can inherit from a common error type and be caught at the web library level for transformation.
+
+Working with Date (Timezone)
+    • All times in the application database are stored in UTC.
+    • Backend calculations also use UTC.
+    • Dates can be aware (with timezone) or naive (without timezone).
+For example:
+    • 2021-08-30T8:00:00.00000+07:00: 8 AM Novokuznetsk GMT+7 (aware)
+    • 2021-08-30T1:00:00.00000+00:00: Same 8 AM in UTC timezone.
+    • 2021-08-30T8:00:00.00000: Naive 8 AM (timezone unclear).
+For ETL tasks, determine the timezone of stored dates and convert them accordingly. Background tasks may require timezone specification, set in project settings and passed to services.
+
+Logging
+Avoid using print statements in main branches of the project.
+    • Use the standard logging module.
+    • Configure settings in each settings.py.
+    • Logs should be in JSON format (using python-json-logger).
+Logging format:
+fmt = '%(asctime)s.%(msecs)03d [%(levelname)s]|[%(name)s]: %(message)s' datefmt = '%Y-%m-%d %H:%M:%S'
+Standard logging levels are used. Global logger objects are avoided to ensure flexibility and modularity.
+Common Mistake
+Incorrect:
+id_ = 1
+self.logger.info(f'Transport with id [{id_}] has been deleted')
+
+Correct:
+id_ = 1
+self.logger.info('Transport with id [%s] has been deleted', id_)
+
+This approach avoids unnecessary CPU consumption when formatting strings in logs with a high volume of DEBUG logs and a global INFO level.
+Infrastructure Logging
+Our infrastructure collects logs in JSON format. The python-json-logger package is used to facilitate this.
+    • JSON logging is optional and can be configured via settings.py.
+
+Reports and Analytics
+    • Heavy SQL queries are acceptable for analytics and reporting, but avoid dialect-dependent constructs where possible.
+    • If the DBMS response does not require processing, the repository logic can be directly integrated into the controller to bypass services.
+Tests
+tests
+└── integration
+└── unit
+Unit Tests: These have priority and are more commonly written.
+        ◦ Adapters are mocked in unit tests.
+    • Integration Tests:
+        ◦ Due to infrastructure limitations, SQLite in-memory databases (sqlite:///:memory:) are used for repository tests.
+Test Structure
+    • Directories should mirror the project’s structure.
+    • Test file names should correspond to the module or class being tested.
+    • Test names should reflect specific cases, e.g., test__<class_name>__<case>.
+tests
+└── integration
+    └── adapters
+        └── app_storage
+            ├── data_access
+            ├── etl_data_access
+            └── repositories
+                ├── __init__.py
+                ├── test_mills.py
+                ├── test_mills_manual_idles.py
+                ├── test_mills_performance.py
+                ├── test_mills_periods.py
+                ├── test_nomenclature.py
+                ├── test_order_items.py
+                ├── test_planned_periods.py
+                ├── test_production_areas.py
+                ├── test_production_periods.py
+                ├── test_remains.py
+                ├── test_weighted_production.py
+                ├── __init__.py
+                └── conftest.py
+
+Other Technical Details
+DBMS Transactions
+    • Nested transactions are not used.
+    • A "Unit of Work" pattern is implemented:
+        ◦ It acts as a decorator over controller methods and/or public service methods.
+        ◦ The transaction starts before code execution, closes after execution, and prevents attempts to create nested transactions.
+    • Manual transaction management in the code is discouraged.
+
+Asynchronous Code
+    • Asynchronous solutions require a clear justification.
+    • Most applications are not IO-bound, so asynchronous solutions are rarely necessary.
+    • When needed, gevent is used, and the code is patched at startup.
+        ◦ The MSSQL driver must be patched separately.
+
+DS Dependencies
+    • Libraries like pandas and numpy are used strictly within DS modules (e.g., for feature engineering).
+    • These libraries should not be used outside of DS-related code.
+
+Websockets
+    • Websockets are implemented to deliver push notifications to the frontend.
+    • RabbitMQ with the Stomp over WS plugin is used for this purpose.
+
+Authorization
+    • The frontend communicates with Keycloak to obtain JWT tokens.
+    • The token contains all user information and is decrypted using the pyjwt package.
+    • Tokens are passed as a Bearer token in the Authorization header, e.g.:
+      Authorization: Bearer <token>
+    • The application makes authorization decisions based on the token data.
+
+Authenticator Class
+    • An "Authenticator" class injects user information into the controller.
+    • The controller then enforces authorization decisions.
+
+Monitoring
+    • Monitoring is currently not implemented.
+    • The infrastructure for centralized monitoring solutions is not yet ready.
+
+Code Design
+Code Standards
+    • Code follows PEP8 guidelines.
+    • Docstrings adhere to PEP256 and PEP257.
+Formatting
+    • Configurations for yapf and isort are in place.
+    • Line length is capped at 80 characters; exceptions can extend up to 100 characters, but auto-formatting must be disabled in these cases.
+Order of Operations
+    1. Run isort.
+    2. Run yapf.
+Decomposition and Refactoring
+    • Monitor the size of modules, classes, and methods.
+    • Refactor and decompose code as necessary to maintain readability and maintainability.

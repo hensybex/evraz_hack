@@ -1,0 +1,934 @@
+Directory: internal/config
+==========================
+
+File: internal/config/config.go
+-------------------------------
+// internal/config/config.go
+
+package config
+
+import (
+	"fmt"
+	"os"
+)
+
+type Config struct {
+	DatabaseURL string
+}
+
+func LoadConfig() (*Config, error) {
+	// Load database configurations
+	host := os.Getenv("POSTGRES_HOST")
+	port := os.Getenv("POSTGRES_PORT")
+	user := os.Getenv("POSTGRES_USER")
+	password := os.Getenv("POSTGRES_PASSWORD")
+	dbName := os.Getenv("POSTGRES_DB")
+	sslMode := os.Getenv("POSTGRES_SSL_MODE")
+	databaseURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		user, password, host, port, dbName, sslMode)
+
+	return &Config{
+		DatabaseURL: databaseURL,
+	}, nil
+}
+
+----------------------------------------
+
+Directory: internal/dto
+=======================
+
+File: internal/dto/project.go
+-----------------------------
+// internal/dto/project.go
+package dto
+
+import "mime/multipart"
+
+type UploadProjectRequest struct {
+	UserID      string
+	Name        string
+	Description string
+	File        *multipart.FileHeader
+}
+
+type UploadProjectResponse struct {
+	Message string     `json:"message"`
+	Project ProjectDTO `json:"project"`
+}
+
+type ProjectDTO struct {
+	ID                    uint   `json:"id"`
+	ProgrammingLanguageID uint   `json:"programming_language_id"`
+	Name                  string `json:"name"`
+	Description           string `json:"description"`
+	Path                  string `json:"path"`
+	Tree                  string `json:"tree"`
+}
+
+----------------------------------------
+
+Directory: internal/router
+==========================
+
+File: internal/router/router.go
+-------------------------------
+// internal/router/router.go
+
+package router
+
+import (
+	"evraz_api/internal/di"
+
+	"github.com/gin-gonic/gin"
+)
+
+func SetupRouter(container *di.DIContainer) *gin.Engine {
+	r := gin.Default()
+
+	// Auth routes
+	apiGroup := r.Group("/api")
+	projectsGroup := apiGroup.Group("/projects")
+	{
+		projectsGroup.POST("/upload_project", container.ProjectHandlers.UploadProject)
+	}
+
+	return r
+}
+
+----------------------------------------
+
+Directory: internal/migration
+=============================
+
+File: internal/migration/migration.go
+-------------------------------------
+// internal/migration/migration.go
+
+package migration
+
+import (
+	"evraz_api/internal/model"
+	"log"
+
+	"gorm.io/gorm"
+)
+
+func ApplyCustomMigrations(db *gorm.DB) error {
+	// Automigrate programming languages
+	programmingLanguages := []model.ProgrammingLanguage{
+		{Name: "Python"},
+		{Name: "C#"},
+		{Name: "Typescript"},
+	}
+
+	for _, language := range programmingLanguages {
+		if err := db.FirstOrCreate(&language, model.ProgrammingLanguage{Name: language.Name}).Error; err != nil {
+			return err
+		}
+	}
+
+	log.Println("Custom migrations applied successfully.")
+	return nil
+}
+
+----------------------------------------
+
+Directory: internal/prompts
+===========================
+
+File: internal/prompts/prompts.go
+---------------------------------
+package prompts
+
+import (
+	"evraz_api/internal/prompts/prompts_storage"
+	"evraz_api/internal/prompts/types"
+)
+
+// Prompts struct that aggregates all specific prompts
+type Prompts struct {
+	ProjectOverview types.Prompt
+}
+
+// NewPrompts initializes and returns a Prompts struct with all predefined prompts
+func NewPrompts() *Prompts {
+	return &Prompts{
+		ProjectOverview: prompts_storage.ProjectOverview,
+	}
+}
+
+----------------------------------------
+
+File: internal/prompts/prompt_constructor.go
+--------------------------------------------
+package prompts
+
+import (
+	"evraz_api/internal/prompts/types"
+	"fmt"
+)
+
+// PromptConstructor is used to construct prompts with specific content
+type PromptConstructor struct{}
+
+// NewPromptConstructor initializes and returns a PromptConstructor
+func NewPromptConstructor() *PromptConstructor {
+	return &PromptConstructor{}
+}
+
+// PromptData is an interface that defines a method to transform data into PassedData
+type PromptData interface {
+	ToPassedData() []types.PassedData
+}
+
+// GetPrompt constructs a prompt based on the provided prompt project and data
+func (pc *PromptConstructor) GetPrompt(prompt types.Prompt, data PromptData) (string, error) {
+	passedData := data.ToPassedData()
+
+	// Construct the list of passed data
+	passedDataList := "You will receive:\n"
+	passedDataContentStr := ""
+	for _, data := range passedData {
+		passedDataList += fmt.Sprintf("%s - %s\n", data.Name, data.Description)
+		passedDataContentStr += fmt.Sprintf("%s - %s\n\n", data.Name, data.Content)
+	}
+
+	// Construct the JSON instruction if applicable
+	jsonInstruction := ""
+	jsonExample := ""
+	if len(prompt.JSONStruct) > 0 {
+		jsonInstruction = "Your response should be a structured JSON with the following keys:\n"
+		jsonExample = "{\n"
+		for _, js := range prompt.JSONStruct {
+			jsonInstruction += fmt.Sprintf("%s: %s\n", js.Key, js.Description)
+			jsonExample += fmt.Sprintf("  \"%s\": %s,\n", js.Key, js.Example)
+		}
+		jsonExample = "Example of response: \n" + jsonExample[:len(jsonExample)-2] + "\n}"
+	}
+
+	// Construct the final prompt
+	finalPrompt := fmt.Sprintf(
+		"%s\n\n%s\n%s\n\n%s\n%s\n%s",
+		prompt.BasePrompt,
+		passedDataList,
+		prompt.BaseTaskDesc,
+		jsonInstruction,
+		passedDataContentStr,
+		jsonExample,
+	)
+
+	return finalPrompt, nil
+}
+
+----------------------------------------
+
+Directory: internal/prompts/types
+=================================
+
+File: internal/prompts/types/types.go
+-------------------------------------
+package types
+
+// PassedData represents the structure of data passed to the prompt
+type PassedData struct {
+	Name        string
+	Description string
+	Content     string
+}
+
+// JSONStruct represents the structure of the JSON response expected
+type JSONStruct struct {
+	Key         string
+	Description string
+	Example     string
+}
+
+// Prompt represents a single prompt with a base prompt and task description
+type Prompt struct {
+	BasePrompt   string
+	BaseTaskDesc string
+	PassedData   []PassedData
+	JSONStruct   []JSONStruct
+}
+
+----------------------------------------
+
+Directory: internal/prompts/prompts_storage
+===========================================
+
+File: internal/prompts/prompts_storage/task_management.go
+---------------------------------------------------------
+package prompts_storage
+
+import "evraz_api/internal/prompts/types"
+
+// ProjectOverviewData contains the specific data for the Project Overview prompt
+type ProjectOverviewData struct {
+	ProjectTree  string
+	ProjectFiles string
+}
+
+// ToPassedData transforms ProjectOverviewData into PassedData
+func (t ProjectOverviewData) ToPassedData() []types.PassedData {
+	return []types.PassedData{
+		{Name: "Project Tree", Description: "Structure of the project project", Content: t.ProjectTree},
+		{Name: "Project Files", Description: "Files included in the project", Content: t.ProjectFiles},
+	}
+}
+
+var ProjectOverview = types.Prompt{
+	BasePrompt:   "As an AI specialized in software project analysis, analyze the project project structure and files.",
+	BaseTaskDesc: "Return a structured JSON containing an overview of the project and each file.",
+	JSONStruct: []types.JSONStruct{
+		{Key: "description", Description: "Overview of the project project", Example: "A broad description..."},
+		{Key: "files_overview", Description: "Overview of each project file", Example: `[{"id": 1, "purpose": "The purpose of the file", "context": "When to use this file"}]`},
+	},
+}
+
+----------------------------------------
+
+Directory: internal/service
+===========================
+
+File: internal/service/file_manager.go
+--------------------------------------
+// internal/file/file_manager.go
+package service
+
+import (
+	"archive/tar"
+	"compress/gzip"
+	"fmt"
+	"io"
+	"mime/multipart"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+)
+
+// FileManager defines methods for file operations
+type FileManager interface {
+	CreateDirectory(path string, perm os.FileMode) error
+	CreateProject(userID, projectName string) error
+	FormulatePath(userID, name string, isProjectPath bool) string
+	SaveUploadedFile(file *multipart.FileHeader, dst string) error
+	RemovePath(path string) error
+	RunTree(userID string, isProject bool, projectName string) (string, error)
+	ProcessFilesInDirectory(path string, processFile func(relPath string, content []byte) error) error
+	ExtractTarGz(src, dst string) error
+}
+
+// OSFileManager is a concrete implementation of FileManager
+type OSFileManager struct {
+	basePath string
+}
+
+const basePath = "/mnt/hdd/projects/evraz_hack"
+
+func NewOSFileManager() *OSFileManager {
+	return &OSFileManager{basePath: basePath}
+}
+
+// CreateDirectory creates a new directory with the given permissions
+func (o *OSFileManager) CreateDirectory(path string, perm os.FileMode) error {
+	return os.MkdirAll(path, perm)
+}
+
+// CreateProject creates a new project directory
+func (o *OSFileManager) CreateProject(userID, projectName string) error {
+	isProject := false
+	path := o.FormulatePath(userID, projectName, isProject)
+	fmt.Printf("Creating directory at path: %s\n", path)
+	return o.CreateDirectory(path, os.ModePerm)
+}
+
+// FormulatePath formulates a path based on userID and name
+func (o *OSFileManager) FormulatePath(userID, name string, isProjectPath bool) string {
+	if isProjectPath {
+		return fmt.Sprintf("%s/projects/%s/%s", o.basePath, userID, name)
+	} else {
+		return fmt.Sprintf("%s/projects/%s/%s", o.basePath, userID, name)
+	}
+}
+
+// SaveUploadedFile saves the uploaded file to the specified destination path
+func (o *OSFileManager) SaveUploadedFile(file *multipart.FileHeader, dst string) error {
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, src)
+	return err
+}
+
+// RemovePath removes a file or directory and its contents
+func (o *OSFileManager) RemovePath(path string) error {
+	return os.RemoveAll(path)
+}
+
+// RunTree runs the "tree" command for the given project
+func (o *OSFileManager) RunTree(userID string, isProject bool, projectName string) (string, error) {
+	projectPath := ""
+	if isProject {
+		projectPath = filepath.Join(o.basePath, "projects", userID, projectName)
+	} else {
+		projectPath = filepath.Join(o.basePath, "projects", userID, projectName)
+	}
+	return o.RunCommandInDirectory(projectPath, "tree")
+}
+
+// RunCommandInDirectory runs a specified command in the given directory and returns the output
+func (o *OSFileManager) RunCommandInDirectory(dir, command string, args ...string) (string, error) {
+	cmd := exec.Command(command, args...)
+	cmd.Dir = dir
+
+	output, err := cmd.CombinedOutput()
+	return string(output), err
+}
+
+// ProcessFilesInDirectory walks through a directory and processes each file using the provided callback function
+func (o *OSFileManager) ProcessFilesInDirectory(path string, processFile func(relPath string, content []byte) error) error {
+	return filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			relPath := strings.TrimPrefix(filePath, path+"/")
+			content, err := o.ReadFile(filePath)
+			if err != nil {
+				return err
+			}
+			return processFile(relPath, content)
+		}
+		return nil
+	})
+}
+
+// ExtractTarGz extracts a tar.gz file to the specified destination directory
+func (o *OSFileManager) ExtractTarGz(src, dst string) error {
+	tarFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer tarFile.Close()
+
+	gzr, err := gzip.NewReader(tarFile)
+	if err != nil {
+		return err
+	}
+	defer gzr.Close()
+
+	tarReader := tar.NewReader(gzr)
+
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		target := filepath.Join(dst, header.Name)
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := o.CreateDirectory(target, 0755); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			outFile, err := os.Create(target)
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				outFile.Close()
+				return err
+			}
+			outFile.Close()
+		}
+	}
+	return nil
+}
+
+// ReadFile reads data from a file
+func (o *OSFileManager) ReadFile(path string) ([]byte, error) {
+	return os.ReadFile(path)
+}
+
+----------------------------------------
+
+Directory: internal/handler
+===========================
+
+File: internal/handler/project.go
+---------------------------------
+// internal/handler/project.go
+package handler
+
+import (
+	"evraz_api/internal/dto"
+	"evraz_api/internal/usecase"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type ProjectHandlers struct {
+	ProjectUsecase *usecase.ProjectUsecase
+}
+
+func NewProjectHandlers(
+	projectUsecase *usecase.ProjectUsecase,
+) *ProjectHandlers {
+	return &ProjectHandlers{
+		ProjectUsecase: projectUsecase,
+	}
+}
+
+func (h *ProjectHandlers) UploadProject(c *gin.Context) {
+	var req dto.UploadProjectRequest
+
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input data"})
+		return
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get file"})
+		return
+	}
+
+	req.File = file
+	req.UserID = c.Param("user_id")
+
+	projectDTO, err := h.ProjectUsecase.UploadProject(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, dto.UploadProjectResponse{Message: "Project project uploaded successfully", Project: projectDTO})
+}
+
+----------------------------------------
+
+Directory: internal/usecase
+===========================
+
+File: internal/usecase/project.go
+---------------------------------
+// internal/usecase/project_usecase.go
+package usecase
+
+import (
+	"errors"
+	"evraz_api/internal/dto"
+	"evraz_api/internal/model"
+	"evraz_api/internal/repository"
+	"evraz_api/internal/service"
+	"path/filepath"
+)
+
+type ProjectUsecase struct {
+	ProjectRepo     repository.ProjectRepository
+	ProjectFileRepo repository.ProjectFileRepository
+	FileManager     service.FileManager
+}
+
+func NewProjectUsecase(projectRepo repository.ProjectRepository, projectFileRepo repository.ProjectFileRepository, fileManager service.FileManager) *ProjectUsecase {
+	return &ProjectUsecase{
+		ProjectRepo:     projectRepo,
+		ProjectFileRepo: projectFileRepo,
+		FileManager:     fileManager,
+	}
+}
+
+func (uc *ProjectUsecase) UploadProject(req dto.UploadProjectRequest) (dto.ProjectDTO, error) {
+	if req.UserID == "" {
+		return dto.ProjectDTO{}, errors.New("User ID is required")
+	}
+
+	// Create the project directory
+	if err := uc.FileManager.CreateProject(req.UserID, req.Name); err != nil {
+		return dto.ProjectDTO{}, errors.New("Failed to create project")
+	}
+
+	// Define path where the file will be saved
+	tempFilePath := filepath.Join(uc.FileManager.FormulatePath(req.UserID, req.Name, false), req.File.Filename)
+
+	// Save the uploaded file
+	if err := uc.FileManager.SaveUploadedFile(req.File, tempFilePath); err != nil {
+		return dto.ProjectDTO{}, errors.New("Failed to save file")
+	}
+
+	// Extract the tar.gz file
+	if err := uc.FileManager.ExtractTarGz(tempFilePath, uc.FileManager.FormulatePath(req.UserID, req.Name, false)); err != nil {
+		return dto.ProjectDTO{}, errors.New("Failed to extract tar file")
+	}
+
+	// Delete the temporary tar.gz file
+	if err := uc.FileManager.RemovePath(tempFilePath); err != nil {
+		return dto.ProjectDTO{}, errors.New("Failed to remove temp file")
+	}
+
+	// Execute tree command to get the directory structure
+	treeOutput, err := uc.FileManager.RunTree(req.UserID, false, req.Name)
+	if err != nil {
+		return dto.ProjectDTO{}, errors.New("Failed to execute tree command")
+	}
+
+	// Create Project object and save to DB
+	project := model.Project{
+		ProgrammingLanguageID: 1,
+		Name:                  req.Name,
+		Description:           req.Description,
+		Path:                  uc.FileManager.FormulatePath(req.UserID, req.Name, false),
+		Tree:                  treeOutput,
+	}
+
+	if err := uc.ProjectRepo.CreateOne(&project); err != nil {
+		return dto.ProjectDTO{}, errors.New("Failed to create project project")
+	}
+
+	// Process files in directory
+	err = uc.FileManager.ProcessFilesInDirectory(uc.FileManager.FormulatePath(req.UserID, req.Name, false), func(relPath string, content []byte) error {
+		projectFile := model.ProjectFile{
+			ProjectID: project.ID,
+			Path:      relPath,
+			Content:   string(content),
+			Purpose:   "",
+			Context:   "",
+		}
+
+		return uc.ProjectFileRepo.CreateOne(&projectFile)
+	})
+
+	if err != nil {
+		return dto.ProjectDTO{}, errors.New("Failed to process project files")
+	}
+
+	return dto.ProjectDTO{
+		ID:                    project.ID,
+		ProgrammingLanguageID: project.ProgrammingLanguageID,
+		Name:                  project.Name,
+		Description:           project.Description,
+		Path:                  project.Path,
+		Tree:                  project.Tree,
+	}, nil
+}
+
+----------------------------------------
+
+File: internal/usecase/project_file.go
+--------------------------------------
+// internal/usecase/project_project_file.go
+package usecase
+
+import (
+	"evraz_api/internal/model"
+	"evraz_api/internal/repository"
+)
+
+type ProjectFileUsecase struct {
+	Repo repository.ProjectFileRepository
+}
+
+func NewProjectFileUsecase(repo repository.ProjectFileRepository) *ProjectFileUsecase {
+	return &ProjectFileUsecase{
+		Repo: repo,
+	}
+}
+
+func (uc *ProjectFileUsecase) CreateOne(file *model.ProjectFile) error {
+	return uc.Repo.CreateOne(file)
+}
+
+func (uc *ProjectFileUsecase) GetOneByID(id uint) (*model.ProjectFile, error) {
+	return uc.Repo.GetOneByID(id)
+}
+
+func (uc *ProjectFileUsecase) GetManyByProjectID(id uint) ([]model.ProjectFile, error) {
+	return uc.Repo.GetManyByProjectID(id)
+}
+
+func (uc *ProjectFileUsecase) UpdateOneByID(file *model.ProjectFile) error {
+	return uc.Repo.UpdateOneByID(file)
+}
+
+----------------------------------------
+
+Directory: internal/model
+=========================
+
+File: internal/model/project.go
+-------------------------------
+// internal/model/project.go
+package model
+
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
+
+type Project struct {
+	ID                    uint           `gorm:"primaryKey" json:"id,omitempty"`
+	CreatedAt             time.Time      `json:"createdAt,omitempty"`
+	UpdatedAt             time.Time      `json:"updatedAt,omitempty"`
+	DeletedAt             gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+	ProgrammingLanguageID uint           `gorm:"not null;index" json:"programming_language_id"`
+	GPTCallID             *uint          `gorm:"index" json:"gpt_call_id,omitempty"`
+	Name                  string         `json:"name"`
+	Description           string         `json:"description"`
+	Path                  string         `json:"path"`
+	Tree                  string         `json:"tree"`
+
+	ProgrammingLanguage ProgrammingLanguage `gorm:"foreignKey:ProgrammingLanguageID"`
+	GPTCall             *GPTCall            `gorm:"foreignKey:GPTCallID"`
+}
+
+----------------------------------------
+
+File: internal/model/gpt_call.go
+--------------------------------
+// internal/model/gpt_call.go
+package model
+
+import (
+	"gorm.io/gorm"
+	"time"
+)
+
+type GPTCall struct {
+	ID          uint           `json:"id,omitempty"`
+	CreatedAt   time.Time      `json:"createdAt,omitempty"`
+	UpdatedAt   time.Time      `json:"updatedAt,omitempty"`
+	DeletedAt   gorm.DeletedAt `json:"deletedAt,omitempty"`
+	FinalPrompt string         `json:"finalPrompt,omitempty"`
+	Reply       string         `json:"reply,omitempty"`
+	EntityType  string         `json:"entity_type,omitempty"`
+	EntityID    uint           `json:"entity_id,omitempty"`
+}
+
+----------------------------------------
+
+File: internal/model/project_file.go
+------------------------------------
+// internal/model/project_file.go
+package model
+
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
+
+type ProjectFile struct {
+	ID        uint           `gorm:"primaryKey" json:"id,omitempty"`
+	CreatedAt time.Time      `json:"createdAt,omitempty"`
+	UpdatedAt time.Time      `json:"updatedAt,omitempty"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+	ProjectID uint           `gorm:"not null;index" json:"project_id"`
+	Path      string         `json:"path"`
+	Content   string         `json:"content"`
+	Purpose   string         `json:"purpose"`
+	Context   string         `json:"context"`
+	GPTCallID *uint          `gorm:"index" json:"gpt_call_id,omitempty"`
+
+	Project Project  `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
+	GPTCall *GPTCall `gorm:"foreignKey:GPTCallID"`
+}
+
+----------------------------------------
+
+File: internal/model/programming_languages.go
+---------------------------------------------
+// internal/model/programming_languages.go
+package model
+
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
+
+type ProgrammingLanguage struct {
+	ID        uint           `gorm:"primaryKey" json:"id,omitempty"`
+	CreatedAt time.Time      `json:"createdAt,omitempty"`
+	UpdatedAt time.Time      `json:"updatedAt,omitempty"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+	Name      string         `gorm:"not null" json:"name"`
+}
+
+----------------------------------------
+
+Directory: internal/di
+======================
+
+File: internal/di/di.go
+-----------------------
+// internal/di/di.go
+
+package di
+
+import (
+	"evraz_api/internal/config"
+	"evraz_api/internal/handler"
+	"evraz_api/internal/repository"
+	"evraz_api/internal/service"
+	"evraz_api/internal/usecase"
+	"gorm.io/gorm"
+)
+
+type DIContainer struct {
+	Config             *config.Config
+	DB                 *gorm.DB
+	ProjectFileRepo    repository.ProjectFileRepository
+	ProjectRepo        repository.ProjectRepository
+	FileManager        service.FileManager
+	ProjectFileUsecase usecase.ProjectFileUsecase
+	ProjectUsecase     usecase.ProjectUsecase
+	ProjectHandlers    *handler.ProjectHandlers
+}
+
+func NewDIContainer(cfg *config.Config, db *gorm.DB) *DIContainer {
+	projectFileRepo := repository.NewGormProjectFileRepository(db)
+	projectRepo := repository.NewGormProjectRepository(db)
+	fileManager := service.NewOSFileManager()
+
+	projectFileUsecase := usecase.NewProjectFileUsecase(projectFileRepo)
+	projectUsecase := usecase.NewProjectUsecase(projectRepo, projectFileRepo, fileManager)
+
+	projectHandlers := handler.NewProjectHandlers(projectUsecase)
+
+	return &DIContainer{
+		Config:             cfg,
+		DB:                 db,
+		ProjectFileRepo:    projectFileRepo,
+		ProjectRepo:        projectRepo,
+		FileManager:        fileManager,
+		ProjectFileUsecase: *projectFileUsecase,
+		ProjectUsecase:     *projectUsecase,
+		ProjectHandlers:    projectHandlers,
+	}
+}
+
+----------------------------------------
+
+Directory: internal/repository
+==============================
+
+File: internal/repository/project.go
+------------------------------------
+// internal/repository/project_project.go
+package repository
+
+import (
+	"evraz_api/internal/model"
+
+	"gorm.io/gorm"
+)
+
+type ProjectRepository interface {
+	CreateOne(project *model.Project) error
+	GetOneByID(id uint) (*model.Project, error)
+	UpdateOneByID(project *model.Project) error
+	GetAll() ([]model.Project, error)
+}
+
+type GormProjectRepository struct {
+	db *gorm.DB
+}
+
+func NewGormProjectRepository(db *gorm.DB) *GormProjectRepository {
+	return &GormProjectRepository{db: db}
+}
+
+func (repo *GormProjectRepository) CreateOne(project *model.Project) error {
+	return repo.db.Create(project).Error
+}
+
+func (repo *GormProjectRepository) GetOneByID(id uint) (*model.Project, error) {
+	var project model.Project
+	if err := repo.db.First(&project, id).Error; err != nil {
+		return nil, err
+	}
+	return &project, nil
+}
+
+func (repo *GormProjectRepository) UpdateOneByID(project *model.Project) error {
+	return repo.db.Save(project).Error
+}
+
+func (repo *GormProjectRepository) GetAll() ([]model.Project, error) {
+	var projects []model.Project
+	if err := repo.db.Find(&projects).Error; err != nil {
+		return nil, err
+	}
+	return projects, nil
+}
+
+----------------------------------------
+
+File: internal/repository/project_file.go
+-----------------------------------------
+// internal/repository/project_project_file.go
+package repository
+
+import (
+	"evraz_api/internal/model"
+
+	"gorm.io/gorm"
+)
+
+type ProjectFileRepository interface {
+	CreateOne(file *model.ProjectFile) error
+	GetOneByID(id uint) (*model.ProjectFile, error)
+	GetManyByProjectID(projectID uint) ([]model.ProjectFile, error)
+	UpdateOneByID(file *model.ProjectFile) error
+}
+
+type GormProjectFileRepository struct {
+	db *gorm.DB
+}
+
+func NewGormProjectFileRepository(db *gorm.DB) *GormProjectFileRepository {
+	return &GormProjectFileRepository{db: db}
+}
+
+func (repo *GormProjectFileRepository) CreateOne(file *model.ProjectFile) error {
+	return repo.db.Create(file).Error
+}
+
+func (repo *GormProjectFileRepository) GetOneByID(id uint) (*model.ProjectFile, error) {
+	var file model.ProjectFile
+	if err := repo.db.First(&file, id).Error; err != nil {
+		return nil, err
+	}
+	return &file, nil
+}
+
+func (repo *GormProjectFileRepository) GetManyByProjectID(projectID uint) ([]model.ProjectFile, error) {
+	var files []model.ProjectFile
+	if err := repo.db.Where(&model.ProjectFile{ProjectID: projectID}).Find(&files).Error; err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
+func (repo *GormProjectFileRepository) UpdateOneByID(file *model.ProjectFile) error {
+	return repo.db.Save(file).Error
+}
+
+----------------------------------------
+

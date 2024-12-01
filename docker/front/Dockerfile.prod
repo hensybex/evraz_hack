@@ -1,0 +1,31 @@
+# Stage 1: Build the Flutter web app
+FROM cirrusci/flutter:stable as build
+
+WORKDIR /app
+
+# Copy the pubspec and pubspec.lock files
+COPY pubspec.* ./
+
+# Get dependencies
+RUN flutter pub get
+
+# Copy the rest of the app's source code
+COPY . .
+
+# Build arguments
+ARG API_BASE_URL
+
+# Build the Flutter web app with the API base URL
+RUN flutter build web --release --dart-define=API_BASE_URL=${API_BASE_URL}
+
+# Stage 2: Serve the app with Nginx
+FROM nginx:alpine
+
+# Copy the build output to Nginx's html directory
+COPY --from=build /app/build/web /usr/share/nginx/html
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx server
+CMD ["nginx", "-g", "daemon off;"]
