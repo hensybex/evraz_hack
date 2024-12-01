@@ -5,6 +5,7 @@ class ProjectDTO {
   final String description;
   final String path;
   final String tree;
+  final bool wasAnalyzed;
 
   ProjectDTO({
     required this.id,
@@ -13,6 +14,7 @@ class ProjectDTO {
     required this.description,
     required this.path,
     required this.tree,
+    required this.wasAnalyzed,
   });
 
   factory ProjectDTO.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class ProjectDTO {
       description: json['description'],
       path: json['path'],
       tree: json['tree'],
+      wasAnalyzed: json['was_analyzed'],
     );
   }
 }

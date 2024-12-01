@@ -51,6 +51,10 @@ func NewProjectAnalysisUsecase(
 func (uc *ProjectAnalysisUsecase) AnalyzeProject(projectID uint) error {
 
 	project, err := uc.ProjectRepo.GetOneByID(projectID)
+	project.WasAnalyzed = true
+	if err := uc.ProjectRepo.UpdateOneByID(project); err != nil {
+		return fmt.Errorf("failed to update project GPTCallID: %w", err)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to retrieve project: %w", err)
 	}

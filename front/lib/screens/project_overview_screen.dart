@@ -25,14 +25,19 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
     'Files',
     'Project Analysis Results',
   ];
+  bool _isAnalyzeButtonVisible = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ProjectOverviewProvider>(context, listen: false)
-          .fetchProjectOverview(widget.projectId);
+      final provider =
+          Provider.of<ProjectOverviewProvider>(context, listen: false);
+      provider.fetchProjectOverview(widget.projectId);
+      setState(() {
+        _isAnalyzeButtonVisible = !provider.overview!.project.wasAnalyzed;
+      });
     });
   }
 
@@ -187,30 +192,33 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
               tabs: _tabs.map((tab) => Tab(text: tab)).toList(),
             ),
             actions: [
-              IconButton(
-                icon: const Icon(
-                  Icons.rocket_launch_sharp,
-                  color: Colors.white,
+              if (_isAnalyzeButtonVisible)
+                IconButton(
+                  icon: const Icon(
+                    Icons.rocket_launch_sharp,
+                    color: Colors.white,
+                  ),
+                  onPressed: () async {
+                    try {
+                      final ApiService apiService = ApiService();
+                      await apiService.analyzeProject(
+                          projectId: widget.projectId);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Project analyzed successfully!')),
+                      );
+
+                      setState(() {
+                        _isAnalyzeButtonVisible = false;
+                      });
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: ${e.toString()}')),
+                      );
+                    }
+                  },
                 ),
-                onPressed: () async {
-                  try {
-                    // Call analyze project (assuming project_id = 1 for example)
-                    final ApiService apiService = ApiService();
-
-                    await apiService.analyzeProject(projectId: 1);
-
-                    // Show Snackbar on success
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Project analyzed successfully!')),
-                    );
-                  } catch (e) {
-                    // Handle error
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: ${e.toString()}')),
-                    );
-                  }
-                },
-              ),
               IconButton(
                 icon: const Icon(
                   Icons.download,

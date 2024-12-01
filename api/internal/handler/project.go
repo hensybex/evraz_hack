@@ -128,6 +128,7 @@ func (h *ProjectHandlers) GetAllProjects(c *gin.Context) {
 			Name:                  project.Name,
 			Path:                  project.Path,
 			Tree:                  project.Tree,
+			WasAnalyzed:           project.WasAnalyzed,
 		}
 	}
 
@@ -158,6 +159,7 @@ func (h *ProjectHandlers) GetProjectOverview(c *gin.Context) {
 		Name:                  project.Name,
 		Path:                  project.Path,
 		Tree:                  project.Tree,
+		WasAnalyzed:           project.WasAnalyzed,
 	}
 
 	fileDTOs := make([]dto.ProjectFileDTO, len(files))

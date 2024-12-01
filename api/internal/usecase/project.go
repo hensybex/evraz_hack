@@ -133,6 +133,7 @@ func (uc *ProjectUsecase) UploadProject(req dto.UploadProjectRequest) (dto.Proje
 		Name:                  project.Name,
 		Path:                  project.Path,
 		Tree:                  project.Tree,
+		WasAnalyzed:           project.WasAnalyzed,
 	}, nil
 }
 

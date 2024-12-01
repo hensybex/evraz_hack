@@ -22,6 +22,7 @@ type ProjectDTO struct {
 	Description           string `json:"description"`
 	Path                  string `json:"path"`
 	Tree                  string `json:"tree"`
+	WasAnalyzed           bool   `json:"was_analyzed"`
 }
 
 type AnalyzeProjectRequest struct {
