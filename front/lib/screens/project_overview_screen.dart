@@ -100,7 +100,19 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
       'DateTimeHandling',
     ];
 
-    // Group the results by prompt name
+// Map for Russian display names
+    final Map<String, String> promptDisplayNames = {
+      'ProjectStructure': 'Структура проекта',
+      'KeyFiles': 'Ключевые файлы',
+      'ApplicationArchitecture': 'Архитектура приложения',
+      'DependencyManagement': 'Управление зависимостями',
+      'ProjectSettings': 'Настройки проекта',
+      'TestingStrategy': 'Стратегия тестирования',
+      'AdditionalTechnical': 'Дополнительные технические аспекты',
+      'DateTimeHandling': 'Работа с датами и временем',
+    };
+
+// Group the results by prompt name
     final Map<String, ProjectAnalysisResultDTO> groupedResults = {};
     for (var promptName in promptNames) {
       final result = results.firstWhere(
@@ -119,10 +131,12 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
     return ListView(
       children: promptNames.map((promptName) {
         final result = groupedResults[promptName]!;
+        final correctPrompt = promptDisplayNames[promptName] ??
+            promptName; // Use Russian display name or fallback
         return Card(
           margin: const EdgeInsets.all(8.0),
           child: ExpansionTile(
-            title: Text(promptName),
+            title: Text(correctPrompt),
             children: [
               ListTile(
                 title: Text('Соответствует требованиям: ${result.compliance}'),

@@ -36,3 +36,7 @@ func (uc *ProjectFileUsecase) GetManyByProjectFileID(id uint) ([]model.ProjectFi
 func (uc *ProjectFileUsecase) UpdateOneByID(file *model.ProjectFile) error {
 	return uc.Repo.UpdateOneByID(file)
 }
+
+func (uc *ProjectFileUsecase) GetProjectFilesWithAnalysis(projectID uint) ([]model.ProjectFile, error) {
+	return uc.Repo.GetFilesWithAnalysisByProjectID(projectID)
+}

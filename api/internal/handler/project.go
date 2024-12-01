@@ -239,6 +239,13 @@ func (h *ProjectHandlers) GenerateProjectPDF(c *gin.Context) {
 		return
 	}
 
+	files, err := h.ProjectFileUsecase.GetProjectFilesWithAnalysis(uint(projectID))
+	if err != nil {
+		fmt.Printf("Error getting project files with analysis: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	fmt.Printf("Retrieved project: %+v\n", project)
 
 	// Initialize PDF
@@ -270,7 +277,7 @@ func (h *ProjectHandlers) GenerateProjectPDF(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
 		return
 	}
-	fmt.Println("Font registered successfully.")
+	fmt.Println("Bold font registered successfully.")
 
 	// Set the font
 	pdf.SetFont(fontName, "", 16)
@@ -318,27 +325,17 @@ func (h *ProjectHandlers) GenerateProjectPDF(c *gin.Context) {
 	}
 	fmt.Println("Added project details to PDF.")
 
-	// Add Analysis Results
+	// Add Project Analysis Results
+	pdf.SetFont(fontName, "B", 14)
+	pdf.Cell(40, 10, "Project Analysis Results")
+	pdf.Ln(10)
+	pdf.SetFont(fontName, "", 12)
 	for _, result := range analysisResults {
-		pdf.SetFont(fontName, "B", 14)
-		if pdf.Err() {
-			errMsg := fmt.Sprintf("Error setting bold font: %v", pdf.Error())
-			fmt.Println(errMsg)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
-			return
-		}
-
+		pdf.SetFont(fontName, "B", 12)
 		pdf.Cell(40, 10, result.PromptName)
 		pdf.Ln(10)
 
 		pdf.SetFont(fontName, "", 12)
-		if pdf.Err() {
-			errMsg := fmt.Sprintf("Error setting normal font: %v", pdf.Error())
-			fmt.Println(errMsg)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
-			return
-		}
-
 		pdf.MultiCell(0, 10, fmt.Sprintf("Compliance: %s", result.Compliance), "", "", false)
 		pdf.MultiCell(0, 10, fmt.Sprintf("Issues: %s", result.Issues), "", "", false)
 		pdf.MultiCell(0, 10, fmt.Sprintf("Recommendations: %s", result.Recommendations), "", "", false)
@@ -351,6 +348,43 @@ func (h *ProjectHandlers) GenerateProjectPDF(c *gin.Context) {
 			return
 		}
 		fmt.Printf("Added analysis result for prompt '%s' to PDF.\n", result.PromptName)
+	}
+
+	// Add Files and their Analysis Results
+	pdf.SetFont(fontName, "B", 14)
+	pdf.Cell(40, 10, "File Analysis Results")
+	pdf.Ln(10)
+	pdf.SetFont(fontName, "", 12)
+	for _, file := range files {
+		// Add File Name
+		pdf.SetFont(fontName, "B", 12)
+		pdf.Cell(40, 10, fmt.Sprintf("File: %s", file.Name))
+		pdf.Ln(10)
+		pdf.SetFont(fontName, "", 12)
+
+		if len(file.FileAnalysisResults) > 0 {
+			for _, analysis := range file.FileAnalysisResults {
+				pdf.SetFont(fontName, "B", 12)
+				pdf.Cell(40, 10, fmt.Sprintf("Analysis: %s", analysis.PromptName))
+				pdf.Ln(10)
+				pdf.SetFont(fontName, "", 12)
+				pdf.MultiCell(0, 10, fmt.Sprintf("Compliance: %s", analysis.Compliance), "", "", false)
+				pdf.MultiCell(0, 10, fmt.Sprintf("Issues: %s", analysis.Issues), "", "", false)
+				pdf.MultiCell(0, 10, fmt.Sprintf("Recommendations: %s", analysis.Recommendations), "", "", false)
+				pdf.Ln(10)
+
+				if pdf.Err() {
+					errMsg := fmt.Sprintf("Error after adding file analysis for file '%s': %v", file.Name, pdf.Error())
+					fmt.Println(errMsg)
+					c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
+					return
+				}
+				fmt.Printf("Added analysis for file '%s' to PDF.\n", file.Name)
+			}
+		} else {
+			pdf.Cell(40, 10, "No analysis results for this file.")
+			pdf.Ln(10)
+		}
 	}
 
 	// Output PDF

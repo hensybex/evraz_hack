@@ -18,6 +18,7 @@ type ProjectFileRepository interface {
 	GetFileContentByName(projectID uint, fileName string) (string, error)
 	GetRootFileContentByName(projectID uint, fileName string) (string, error)
 	GetFilesByProjectID(projectID uint) ([]model.ProjectFile, error)
+	GetFilesWithAnalysisByProjectID(projectID uint) ([]model.ProjectFile, error)
 }
 
 type GormProjectFileRepository struct {
@@ -103,6 +104,17 @@ func (repo *GormProjectFileRepository) GetRootFileContentByName(projectID uint, 
 func (repo *GormProjectFileRepository) GetFilesByProjectID(projectID uint) ([]model.ProjectFile, error) {
 	var files []model.ProjectFile
 	if err := repo.db.Where("project_id = ?", projectID).Find(&files).Error; err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
+func (repo *GormProjectFileRepository) GetFilesWithAnalysisByProjectID(projectID uint) ([]model.ProjectFile, error) {
+	var files []model.ProjectFile
+	if err := repo.db.
+		Where("project_id = ?", projectID).
+		Preload("FileAnalysisResults").
+		Find(&files).Error; err != nil {
 		return nil, err
 	}
 	return files, nil

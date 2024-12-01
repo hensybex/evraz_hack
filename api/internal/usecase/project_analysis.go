@@ -104,7 +104,7 @@ func (uc *ProjectAnalysisUsecase) AnalyzeProject(projectID uint) error {
 				}
 			}
 			if foundAny == false {
-				outputDBValue = "setup.py, setup.cfg, pyproject.toml and README.md are missing at the root of the project directory"
+				outputDBValue = "setup.py, setup.cfg, pyproject.toml и README.md отсутствуют в корне проекта"
 				emptyValue = true
 			}
 			data = project_prompts.KeyFilesData{
@@ -151,7 +151,7 @@ func (uc *ProjectAnalysisUsecase) AnalyzeProject(projectID uint) error {
 				}
 			}
 			if foundAny == false {
-				outputDBValue = "settings.py, config.yaml and pyproject.toml are missing at the root of the project directory"
+				outputDBValue = "settings.py, config.yaml и pyproject.toml отсутствуют в корне проекта"
 				emptyValue = true
 			}
 			data = project_prompts.ProjectSettingsData{
@@ -214,7 +214,7 @@ func (uc *ProjectAnalysisUsecase) AnalyzeProject(projectID uint) error {
 			if err != nil {
 				transactionCode, err = uc.ProjectFileRepo.GetFileContentByName(project.ID, filePath)
 				if err != nil {
-					transactionCode = filePath + " was not found"
+					transactionCode = filePath + " не найден"
 					outputDBValue = transactionCode
 					emptyValue = true
 				} else {
@@ -228,7 +228,7 @@ func (uc *ProjectAnalysisUsecase) AnalyzeProject(projectID uint) error {
 			if err != nil {
 				asyncCode, err = uc.ProjectFileRepo.GetFileContentByName(project.ID, filePath)
 				if err != nil {
-					asyncCode = filePath + " was not found"
+					asyncCode = filePath + " не найден"
 				} else {
 					foundAny = true
 				}
@@ -236,7 +236,7 @@ func (uc *ProjectAnalysisUsecase) AnalyzeProject(projectID uint) error {
 				foundAny = true
 			}
 			if foundAny == false {
-				outputDBValue = "transaction_manager.py and async_features.py are missing at the root of the project directory"
+				outputDBValue = "transaction_manager.py и async_features.py отсутствуют в корне проекта"
 				emptyValue = true
 			}
 			data = project_prompts.AdditionalTechnicalData{
@@ -250,7 +250,7 @@ func (uc *ProjectAnalysisUsecase) AnalyzeProject(projectID uint) error {
 			if err != nil {
 				dateTimeCode, err = uc.ProjectFileRepo.GetFileContentByName(project.ID, filePath)
 				if err != nil {
-					dateTimeCode = filePath + " was not found"
+					dateTimeCode = filePath + " не найден"
 					outputDBValue = dateTimeCode
 					emptyValue = true
 				}

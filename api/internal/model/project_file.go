@@ -1,5 +1,3 @@
-// internal/model/project_file.go
-
 package model
 
 import (
@@ -20,5 +18,6 @@ type ProjectFile struct {
 	WasAnalyzed bool           `json:"was_analyzed"`
 	GPTCallID   *uint          `json:"gpt_call_id,omitempty"`
 
-	Project Project `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
+	Project             Project              `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
+	FileAnalysisResults []FileAnalysisResult `gorm:"foreignKey:ProjectFileID"`
 }

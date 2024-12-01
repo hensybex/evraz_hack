@@ -1,5 +1,3 @@
-// internal/model/file_analysis_result.go
-
 package model
 
 import (
@@ -18,7 +16,6 @@ type FileAnalysisResult struct {
 	Issues          string         `gorm:"type:text" json:"issues"`
 	Recommendations string         `gorm:"type:text" json:"recommendations"`
 
-	ProjectFileID uint `gorm:"not null;index" json:"projectFileId"`
-
-	ProjectFile ProjectFile `gorm:"foreignKey:ProjectFileID;constraint:OnDelete:CASCADE"`
+	ProjectFileID uint        `gorm:"not null;index" json:"projectFileId"`
+	ProjectFile   ProjectFile `gorm:"foreignKey:ProjectFileID;constraint:OnDelete:CASCADE"`
 }
