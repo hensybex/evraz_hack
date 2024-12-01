@@ -37,7 +37,7 @@ services:
 
   web:
     build:
-      context: ./web
+      context: ./front
       dockerfile: ./docker/web/Dockerfile.prod
       args:
         API_BASE_URL: "http://${API_HOST:-api}:${API_PORT:-8080}"
