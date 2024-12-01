@@ -11,6 +11,9 @@ class ProjectFileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: file.wasAnalyzed
+          ? Colors.green[100]
+          : Colors.red[100], // Change color based on `wasAnalyzed`
       child: ListTile(
         title: Text(file.name),
         subtitle: Text('Was Analyzed: ${file.wasAnalyzed ? 'Yes' : 'No'}'),
