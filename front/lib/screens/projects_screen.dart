@@ -30,17 +30,17 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Create New Project"),
+          title: const Text("Загрузить новый проект"),
           content: SingleChildScrollView(
             child: Column(
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: "Project Name"),
+                  decoration: const InputDecoration(labelText: "Имя проекта"),
                 ),
                 DropdownButtonFormField<int>(
                   decoration:
-                      const InputDecoration(labelText: "Programming Language"),
+                      const InputDecoration(labelText: "Язык программирования"),
                   items: const [
                     DropdownMenuItem(value: 1, child: Text('Python')),
                     DropdownMenuItem(value: 2, child: Text('C#')),
@@ -60,14 +60,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       selectedFile = result.files.first;
                     }
                   },
-                  child: const Text("Upload Archive"),
+                  child: const Text("Загрузить архив"),
                 ),
               ],
             ),
           ),
           actions: [
             TextButton(
-              child: const Text("Create Project"),
+              child: const Text("Загрузить проект"),
               onPressed: () async {
                 if (nameController.text.isNotEmpty &&
                     selectedLanguageId != null &&
@@ -102,7 +102,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final projectProvider = Provider.of<ProjectProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Projects')),
+      appBar: AppBar(title: const Text('Проекты')),
       body: projectProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(

@@ -27,7 +27,7 @@ class ProjectCard extends StatelessWidget {
     return Card(
       child: ListTile(
         title: Text(project.name),
-        subtitle: Text('Language: $languageName'),
+        subtitle: Text('Язык Программирования: $languageName'),
         onTap: () {
           context.go('/project/${project.id}');
         },

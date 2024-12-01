@@ -29,7 +29,7 @@ class _FileAnalysisScreenState extends State<FileAnalysisScreen> {
       builder: (context, provider, child) {
         if (provider.isLoading) {
           return Scaffold(
-            appBar: AppBar(title: Text('File Analysis')),
+            appBar: AppBar(title: Text('Анализ Файла')),
             body: Center(child: CircularProgressIndicator()),
           );
         }
@@ -37,7 +37,7 @@ class _FileAnalysisScreenState extends State<FileAnalysisScreen> {
         final analysisResults = provider.analysisResults;
 
         return Scaffold(
-          appBar: AppBar(title: Text('File Analysis')),
+          appBar: AppBar(title: Text('Анализ Файла')),
           body: ListView(
             children: _buildAnalysisContainers(analysisResults),
           ),
@@ -79,7 +79,7 @@ class _FileAnalysisScreenState extends State<FileAnalysisScreen> {
           title: Text(promptName),
           children: [
             ListTile(
-              title: Text('Compliance: ${result.compliance}'),
+              title: Text('Соответствует требованиям: ${result.compliance}'),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -87,7 +87,7 @@ class _FileAnalysisScreenState extends State<FileAnalysisScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Issues:',
+                    'Проблемы:',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   ..._parseStringToList(result.issues).map((issue) {
@@ -95,7 +95,7 @@ class _FileAnalysisScreenState extends State<FileAnalysisScreen> {
                   }),
                   const SizedBox(height: 8),
                   const Text(
-                    'Recommendations:',
+                    'Рекомендации:',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   ..._parseStringToList(result.recommendations).map((rec) {

@@ -13,7 +13,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => ProjectOverviewProvider()),
         ChangeNotifierProvider(create: (_) => FileAnalysisProvider()),
       ],
-      child: MyApp(),
+      child: const MyApp(),
     ),
   );
 }
@@ -22,7 +22,7 @@ final ThemeData lightTheme = ThemeData(
   brightness: Brightness.light,
   primarySwatch: Colors.blue,
   scaffoldBackgroundColor: Colors.white,
-  appBarTheme: AppBarTheme(
+  appBarTheme: const AppBarTheme(
     backgroundColor: Colors.blue,
     foregroundColor: Colors.white,
   ),
@@ -32,7 +32,7 @@ final ThemeData darkTheme = ThemeData(
   brightness: Brightness.dark,
   primarySwatch: Colors.deepPurple,
   scaffoldBackgroundColor: Colors.black,
-  appBarTheme: AppBarTheme(
+  appBarTheme: const AppBarTheme(
     backgroundColor: Colors.deepPurple,
     foregroundColor: Colors.white,
   ),
@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       routerConfig: router,
-      title: 'Programming Projects',
+      title: 'ЕВРАЗ Хакатон',
       theme: lightTheme, // Light theme configuration
       darkTheme: darkTheme, // Dark theme configuration
     );

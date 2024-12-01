@@ -21,9 +21,9 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final List<String> _tabs = [
-    'Overview',
-    'Files',
-    'Project Analysis Results',
+    'Общее',
+    'Файлы',
+    'Анализ проекта',
   ];
   bool _isAnalyzeButtonVisible = true;
 
@@ -49,18 +49,16 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
           Text('ID: ${project.id}', style: const TextStyle(fontSize: 16)),
           const SizedBox(height: 8),
           Text(
-            'Programming Language: ${getProgrammingLanguageName(project.programmingLanguageId)}',
+            'Язык программирования: ${getProgrammingLanguageName(project.programmingLanguageId)}',
             style: const TextStyle(fontSize: 16),
           ),
           const SizedBox(height: 8),
-          Text('Name: ${project.name}', style: const TextStyle(fontSize: 16)),
+          Text('Имя: ${project.name}', style: const TextStyle(fontSize: 16)),
           const SizedBox(height: 8),
-          Text('Description: ${project.description}',
+          Text('Путь: ${project.path}', style: const TextStyle(fontSize: 16)),
+          const SizedBox(height: 8),
+          Text('Структура проекта: ${project.tree}',
               style: const TextStyle(fontSize: 16)),
-          const SizedBox(height: 8),
-          Text('Path: ${project.path}', style: const TextStyle(fontSize: 16)),
-          const SizedBox(height: 8),
-          Text('Tree: ${project.tree}', style: const TextStyle(fontSize: 16)),
         ],
       ),
     );
@@ -127,7 +125,7 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
             title: Text(promptName),
             children: [
               ListTile(
-                title: Text('Compliance: ${result.compliance}'),
+                title: Text('Соответствует требованиям: ${result.compliance}'),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -135,7 +133,7 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Issues:',
+                      'Проблемы:',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     ..._parseStringToList(result.issues).map((issue) {
@@ -143,7 +141,7 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
                     }),
                     const SizedBox(height: 8),
                     const Text(
-                      'Recommendations:',
+                      'Рекомендации:',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     ..._parseStringToList(result.recommendations).map((rec) {
@@ -170,7 +168,7 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
         if (provider.isLoading || provider.overview == null) {
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Project Overview'),
+              title: const Text('Обзор проекта'),
               bottom: TabBar(
                 controller: _tabController,
                 tabs: _tabs.map((tab) => Tab(text: tab)).toList(),
@@ -186,7 +184,7 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Project Overview'),
+            title: const Text('Обзор проекта'),
             bottom: TabBar(
               controller: _tabController,
               tabs: _tabs.map((tab) => Tab(text: tab)).toList(),
@@ -200,18 +198,17 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
                   ),
                   onPressed: () async {
                     try {
-                      final ApiService apiService = ApiService();
-                      await apiService.analyzeProject(
-                          projectId: widget.projectId);
-
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content: Text('Project analyzed successfully!')),
+                            content: Text('Проект отправлен на анализ')),
                       );
 
                       setState(() {
                         _isAnalyzeButtonVisible = false;
                       });
+                      final ApiService apiService = ApiService();
+                      await apiService.analyzeProject(
+                          projectId: widget.projectId);
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Error: ${e.toString()}')),
@@ -233,7 +230,7 @@ class ProjectOverviewScreenState extends State<ProjectOverviewScreen>
                     // Handle error
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                          content: Text('Could not launch PDF download')),
+                          content: Text('Не получилось загрузить пдф')),
                     );
                   }
                 },

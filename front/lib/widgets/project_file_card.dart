@@ -16,7 +16,8 @@ class ProjectFileCard extends StatelessWidget {
           : Colors.red[100], // Change color based on `wasAnalyzed`
       child: ListTile(
         title: Text(file.name),
-        subtitle: Text('Was Analyzed: ${file.wasAnalyzed ? 'Yes' : 'No'}'),
+        subtitle:
+            Text('Успешно проанализирован: ${file.wasAnalyzed ? 'Да' : 'Нет'}'),
         onTap: () {
           context.go('/project/$projectId/file/${file.id}');
         },
