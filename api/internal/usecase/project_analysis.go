@@ -191,7 +191,8 @@ func (uc *ProjectAnalysisUsecase) AnalyzeProject(projectID uint) error {
 				// Convert string ID to uint
 				testsFileContent, err := uc.ProjectFileRepo.GetFileContentByPath(projectID, route)
 				if err != nil {
-					return fmt.Errorf("failed to fetch file at route %s: %w", route, err)
+					emptyValue = true
+					continue
 				}
 
 				// Ensure both path and content are not empty before appending
